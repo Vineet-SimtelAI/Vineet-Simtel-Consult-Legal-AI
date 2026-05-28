@@ -18,7 +18,7 @@ interface AuthState {
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
-  isLoading: boolean;
+  _hydrated: boolean;
 
   // Actions
   setUser: (user: User | null) => void;
@@ -26,7 +26,7 @@ interface AuthState {
   login: (user: User, token: string) => void;
   logout: () => void;
   updateCredits: (balance: number) => void;
-  setLoading: (loading: boolean) => void;
+  setHydrated: (v: boolean) => void;
 }
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
@@ -37,14 +37,14 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       token: null,
       isAuthenticated: false,
-      isLoading: true,
+      _hydrated: false,
 
       setUser: (user) => set({ user, isAuthenticated: !!user }),
       setToken: (token) => set({ token }),
-      setLoading: (isLoading) => set({ isLoading }),
+      setHydrated: (_hydrated) => set({ _hydrated }),
 
       login: (user, token) => {
-        set({ user, token, isAuthenticated: true, isLoading: false });
+        set({ user, token, isAuthenticated: true, _hydrated: true });
         // Store token in cookie for middleware
         if (typeof document !== 'undefined') {
           document.cookie = `cl_token=${token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
@@ -63,7 +63,7 @@ export const useAuthStore = create<AuthState>()(
         } catch {
           // Ignore logout API errors
         }
-        set({ user: null, token: null, isAuthenticated: false, isLoading: false });
+        set({ user: null, token: null, isAuthenticated: false, _hydrated: true });
         if (typeof document !== 'undefined') {
           document.cookie = 'cl_token=; path=/; max-age=0';
         }
@@ -83,6 +83,11 @@ export const useAuthStore = create<AuthState>()(
         token: state.token,
         isAuthenticated: state.isAuthenticated,
       }),
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          state._hydrated = true;
+        }
+      },
     },
   ),
 );
