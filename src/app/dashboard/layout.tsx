@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import {
@@ -14,11 +15,11 @@ import {
   Zap,
   Menu,
   X,
+  Loader2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { useAuthStore } from "@/stores/auth-store"
-import { useState } from "react"
 
 const sidebarItems = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -37,8 +38,37 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname()
   const router = useRouter()
-  const { user, logout } = useAuthStore()
+  const { user, isAuthenticated, login, logout } = useAuthStore()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [checked, setChecked] = useState(false)
+
+  // Client-side auth check — hydrate from localStorage and ensure cookie exists
+  useEffect(() => {
+    const store = useAuthStore.getState()
+
+    if (store.isAuthenticated && store.token) {
+      // Ensure cookie is set (in case it was lost)
+      document.cookie = `cl_token=${store.token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`
+      setChecked(true)
+    } else if (!store.isAuthenticated) {
+      // Not authenticated, redirect to login
+      router.replace("/login?callbackUrl=" + encodeURIComponent(pathname))
+    } else {
+      setChecked(true)
+    }
+  }, [pathname, router])
+
+  // Show loading while checking auth
+  if (!checked) {
+    return (
+      <div className="min-h-screen flex items-center justify-center pt-16">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-8 w-8 animate-spin text-teal" />
+          <p className="text-sm text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    )
+  }
 
   const handleLogout = async () => {
     await logout()
