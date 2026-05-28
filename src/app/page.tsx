@@ -1,31 +1,25 @@
-'use client'
+"use client"
+
+import { HeroSection } from "@/components/landing/hero-section"
+import { ServicesSection } from "@/components/landing/services-section"
+import { WhyChooseSection } from "@/components/landing/why-choose-section"
+import { HowItWorksSection } from "@/components/landing/how-it-works-section"
+import { PricingSection } from "@/components/landing/pricing-section"
+import { ResourcesSection } from "@/components/landing/resources-section"
+import { DocumentLibrarySection } from "@/components/landing/document-library-section"
+import { CTASection } from "@/components/landing/cta-section"
 
 export default function Home() {
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      minHeight: '100vh',
-      gap: '2rem',
-      padding: '1rem'
-    }}>
-      <div style={{
-        position: 'relative',
-        width: '6rem',
-        height: '6rem'
-      }}>
-        <img
-          src="/logo.svg"
-          alt="Z.ai Logo"
-          style={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'contain'
-          }}
-        />
-      </div>
+    <div className="relative">
+      <HeroSection />
+      <ServicesSection />
+      <WhyChooseSection />
+      <HowItWorksSection />
+      <PricingSection />
+      <ResourcesSection />
+      <DocumentLibrarySection />
+      <CTASection />
     </div>
   )
 }

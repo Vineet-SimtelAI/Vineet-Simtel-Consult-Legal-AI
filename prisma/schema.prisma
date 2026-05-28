@@ -1,9 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -17,16 +14,125 @@ model User {
   id        String   @id @default(cuid())
   email     String   @unique
   name      String?
+  image     String?
+  credits   Int      @default(25)
+  role      String   @default("user") // user, lawyer, admin
+  googleId  String?  @unique
+  phone     String?
+  company   String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  documents     Document[]
+  consultations Consultation[]
+  creditTxns    CreditTransaction[]
+  chatSessions  ChatSession[]
 }
 
-model Post {
+model Document {
+  id         String   @id @default(cuid())
+  userId     String
+  type       String   // NDA, employment, service, etc.
+  title      String
+  formData   String   // JSON string of form inputs
+  clauses    String   // JSON array of selected clauses
+  pdfUrl     String?
+  docxUrl    String?
+  status     String   @default("draft") // draft, generated, reviewed
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model LawyerProfile {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  specializations String  // JSON array
+  experience     Int      // years
+  hourlyRate     Int
+  location       String
+  languages      String   // JSON array
+  rating         Float    @default(0)
+  reviewCount    Int      @default(0)
+  verified       Boolean  @default(false)
+  availability   String   // JSON object
+  bio            String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Consultation {
+  id           String   @id @default(cuid())
+  userId       String
+  lawyerId     String
+  type         String   // video, audio, chat
+  status       String   @default("booked") // booked, completed, cancelled
+  scheduledAt  DateTime
+  duration     Int?     // minutes
+  price        Int
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model CreditTransaction {
+  id         String   @id @default(cuid())
+  userId     String
+  amount     Int      // positive = purchase, negative = usage
+  tokens     Int?     // token count for AI chat
+  type       String   // purchase, document_generation, ai_chat, consultation
+  package    String?  // starter, basic, standard, professional, enterprise
+  razorpayId String?
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model ChatSession {
   id        String   @id @default(cuid())
-  title     String
-  content   String?
-  published Boolean  @default(false)
-  authorId  String
+  userId    String
+  title     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  user     User          @relation(fields: [userId], references: [id])
+  messages ChatMessage[]
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  sessionId String
+  role      String   // user, assistant
+  content   String
+  tokens    Int?
+  createdAt DateTime @default(now())
+
+  session ChatSession @relation(fields: [sessionId], references: [id])
+}
+
+model DocumentTemplate {
+  id          String   @id @default(cuid())
+  type        String   @unique
+  name        String
+  description String
+  clauses     String   // JSON array of available clauses
+  formSchema  String   // JSON schema for the form
+  price       Int      @default(499)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ResourceArticle {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  category    String
+  content     String
+  readTime    Int      // minutes
+  publishedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
