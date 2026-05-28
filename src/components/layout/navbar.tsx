@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import {
   Scale,
@@ -16,15 +16,20 @@ import {
   Shield,
   Sun,
   Moon,
+  LogOut,
+  Zap,
+  User,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
+import { useAuthStore } from "@/stores/auth-store"
 
 const products = [
   { name: "Legal Documents Workflow", href: "/products/documents", icon: FileText, desc: "Generate legal documents in minutes" },
@@ -48,13 +53,9 @@ export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const pathname = usePathname()
+  const router = useRouter()
+  const { user, isAuthenticated, logout } = useAuthStore()
   const [isDark, setIsDark] = useState(true)
-  const toggleThemeRef = useState(() => {
-    if (typeof window !== "undefined") {
-      return document.documentElement.classList.contains("dark")
-    }
-    return true
-  })[0]
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20)
@@ -66,6 +67,13 @@ export function Navbar() {
     document.documentElement.classList.toggle("dark")
     setIsDark(prev => !prev)
   }
+
+  const handleLogout = async () => {
+    await logout()
+    router.push("/")
+  }
+
+  const isDashboard = pathname.startsWith("/dashboard")
 
   return (
     <header
@@ -169,11 +177,50 @@ export function Navbar() {
             <Button variant="ghost" size="icon" onClick={toggleTheme} className="h-9 w-9">
               {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
-            <Link href="/login">
-              <Button size="sm" className="bg-teal hover:bg-teal-dark text-white font-medium">
-                Get Started
-              </Button>
-            </Link>
+
+            {isAuthenticated && user ? (
+              <>
+                <Link href="/dashboard/credits">
+                  <Button variant="ghost" size="sm" className="gap-1 text-teal">
+                    <Zap className="h-4 w-4" />
+                    {user.creditBalance}
+                  </Button>
+                </Link>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="gap-2">
+                      <div className="w-6 h-6 rounded-full bg-teal/20 flex items-center justify-center text-teal text-xs font-bold">
+                        {user.name?.[0]?.toUpperCase() || "U"}
+                      </div>
+                      <span className="max-w-[100px] truncate">{user.name?.split(" ")[0] || "User"}</span>
+                      <ChevronDown className="h-3 w-3" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem asChild>
+                      <Link href="/dashboard" className="cursor-pointer flex items-center gap-2">
+                        <User className="h-4 w-4" /> Dashboard
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/dashboard/settings" className="cursor-pointer flex items-center gap-2">
+                        <Settings className="h-4 w-4" /> Settings
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-destructive focus:text-destructive">
+                      <LogOut className="h-4 w-4 mr-2" /> Sign Out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            ) : (
+              <Link href="/login">
+                <Button size="sm" className="bg-teal hover:bg-teal-dark text-white font-medium">
+                  Get Started
+                </Button>
+              </Link>
+            )}
           </div>
 
           {/* Mobile menu button */}
@@ -235,9 +282,22 @@ export function Navbar() {
                 <Button variant="ghost" className="w-full justify-start">Contact</Button>
               </Link>
               <div className="pt-2 border-t border-border">
-                <Link href="/login" onClick={() => setIsMobileOpen(false)}>
-                  <Button className="w-full bg-teal hover:bg-teal-dark text-white">Get Started</Button>
-                </Link>
+                {isAuthenticated && user ? (
+                  <div className="space-y-2">
+                    <Link href="/dashboard" onClick={() => setIsMobileOpen(false)}>
+                      <Button variant="ghost" className="w-full justify-start gap-2">
+                        <User className="h-4 w-4" /> Dashboard ({user.creditBalance} credits)
+                      </Button>
+                    </Link>
+                    <Button variant="ghost" className="w-full justify-start gap-2 text-destructive" onClick={handleLogout}>
+                      <LogOut className="h-4 w-4" /> Sign Out
+                    </Button>
+                  </div>
+                ) : (
+                  <Link href="/login" onClick={() => setIsMobileOpen(false)}>
+                    <Button className="w-full bg-teal hover:bg-teal-dark text-white">Get Started</Button>
+                  </Link>
+                )}
               </div>
             </div>
           </motion.div>

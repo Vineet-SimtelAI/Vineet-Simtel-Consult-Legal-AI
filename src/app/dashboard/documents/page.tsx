@@ -1,63 +1,160 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
-import Link from "next/link"
-import { FileText, Plus, Download, Eye, ArrowRight } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { FileText, Plus, Download, Trash2, Loader2, Clock } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { useAuthStore } from "@/stores/auth-store"
+import { useToast } from "@/hooks/use-toast"
+import Link from "next/link"
 
-const documentTypes = [
-  { name: "Non-Disclosure Agreement", desc: "Protect confidential information", popular: true },
-  { name: "Employment Agreement", desc: "Define employment terms and conditions", popular: true },
-  { name: "Service Agreement", desc: "Contract for services between parties", popular: false },
-  { name: "Vendor Agreement", desc: "Terms for vendor/supplier relationships", popular: false },
-  { name: "Consulting Agreement", desc: "Contract for consulting services", popular: false },
-  { name: "Partnership Agreement", desc: "Define partnership terms and responsibilities", popular: false },
-  { name: "Independent Contractor", desc: "Terms for freelancer/contractor engagement", popular: false },
-  { name: "Privacy Policy", desc: "GDPR-compliant privacy policy for platforms", popular: false },
-  { name: "Terms of Service", desc: "Terms and conditions for websites/apps", popular: false },
-  { name: "Non-Compete Agreement", desc: "Restrict competitive activities", popular: false },
-]
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1"
+
+interface Document {
+  id: string
+  type: string
+  title: string
+  status: string
+  creditsUsed: number
+  createdAt: string
+}
 
 export default function DashboardDocumentsPage() {
+  const { token } = useAuthStore()
+  const { toast } = useToast()
+  const [documents, setDocuments] = useState<Document[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchDocuments() {
+      try {
+        const res = await fetch(`${API_BASE}/documents`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        const data = await res.json()
+        if (data.success) {
+          setDocuments(data.data.documents)
+        }
+      } catch {
+        // empty
+      } finally {
+        setLoading(false)
+      }
+    }
+    if (token) fetchDocuments()
+    else setLoading(false)
+  }, [token])
+
+  const handleDownload = async (docId: string) => {
+    try {
+      const res = await fetch(`${API_BASE}/documents/${docId}/download`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const data = await res.json()
+      if (data.success && data.data?.url) {
+        window.open(data.data.url, "_blank")
+      } else {
+        toast({ title: "Document not ready", description: "The document is still being generated.", variant: "destructive" })
+      }
+    } catch {
+      toast({ title: "Download failed", description: "Could not download the document.", variant: "destructive" })
+    }
+  }
+
+  const handleDelete = async (docId: string) => {
+    if (!confirm("Are you sure you want to delete this document?")) return
+    try {
+      const res = await fetch(`${API_BASE}/documents/${docId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (res.ok) {
+        setDocuments(prev => prev.filter(d => d.id !== docId))
+        toast({ title: "Document deleted" })
+      }
+    } catch {
+      toast({ title: "Delete failed", variant: "destructive" })
+    }
+  }
+
+  const statusColors: Record<string, string> = {
+    DRAFT: "bg-muted text-muted-foreground",
+    GENERATING: "bg-amber/10 text-amber",
+    COMPLETED: "bg-teal/10 text-teal",
+    FAILED: "bg-destructive/10 text-destructive",
+  }
+
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Documents</h1>
-          <p className="text-muted-foreground">Generate and manage your legal documents</p>
+          <p className="text-muted-foreground">Manage your legal documents</p>
         </div>
         <Link href="/dashboard/documents/generate">
-          <Button className="bg-teal hover:bg-teal-dark text-white gap-2">
+          <Button size="sm" className="bg-teal hover:bg-teal-dark text-white gap-1">
             <Plus className="h-4 w-4" /> Generate New
           </Button>
         </Link>
       </div>
 
-      <div>
-        <h2 className="text-lg font-semibold mb-4">Available Document Types</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {documentTypes.map((doc, i) => (
-            <motion.div key={doc.name} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-              <Card className="group hover:border-teal/30 transition-all duration-300 hover:-translate-y-1 cursor-pointer h-full">
-                <CardContent className="p-4 flex items-start gap-4">
-                  <div className="p-2 rounded-lg bg-teal/10 shrink-0">
-                    <FileText className="h-5 w-5 text-teal" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-medium text-sm truncate">{doc.name}</h3>
-                      {doc.popular && <span className="px-1.5 py-0.5 rounded text-[10px] bg-amber/10 text-amber font-medium shrink-0">Popular</span>}
+      {loading ? (
+        <div className="flex items-center justify-center py-16">
+          <div className="animate-spin h-8 w-8 border-2 border-teal border-t-transparent rounded-full" />
+        </div>
+      ) : documents.length > 0 ? (
+        <div className="space-y-3">
+          {documents.map((doc, i) => (
+            <motion.div key={doc.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
+              <Card className="border-border/50 hover:border-teal/20 transition-colors">
+                <CardContent className="p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-teal/10 flex items-center justify-center">
+                      <FileText className="h-5 w-5 text-teal" />
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">{doc.desc}</p>
-                    <p className="text-xs font-medium text-teal mt-2">₹499</p>
+                    <div>
+                      <h3 className="font-medium text-sm">{doc.title}</h3>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span>{doc.type}</span>
+                        <span>·</span>
+                        <Clock className="h-3 w-3" />
+                        <span>{new Date(doc.createdAt).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`px-2 py-0.5 rounded-md text-xs font-medium ${statusColors[doc.status] || "bg-muted"}`}>
+                      {doc.status}
+                    </span>
+                    {doc.status === "COMPLETED" && (
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDownload(doc.id)}>
+                        <Download className="h-4 w-4" />
+                      </Button>
+                    )}
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => handleDelete(doc.id)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
             </motion.div>
           ))}
         </div>
-      </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mb-4">
+            <FileText className="h-8 w-8 text-muted-foreground" />
+          </div>
+          <h2 className="text-lg font-semibold mb-2">No documents yet</h2>
+          <p className="text-sm text-muted-foreground max-w-md">
+            Generate your first legal document in minutes. Choose from NDA, Employment Agreements, Service Agreements, and more.
+          </p>
+          <Link href="/dashboard/documents/generate">
+            <Button size="sm" className="mt-4 bg-teal hover:bg-teal-dark text-white">Generate Document</Button>
+          </Link>
+        </div>
+      )}
     </div>
   )
 }

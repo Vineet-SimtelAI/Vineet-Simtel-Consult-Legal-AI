@@ -61,3 +61,44 @@ Stage Summary:
 - Razorpay payment integration with credit system
 - Swagger API docs at /api/docs
 - Docker Compose ready for full stack deployment
+
+---
+Task ID: 2-12
+Agent: Main Agent
+Task: Wire everything — Auth, Stores, Real API calls, Seed data, Document processor
+
+Work Log:
+- Installed next-auth@beta and socket.io-client
+- Created Zustand auth store with persist (login, logout, updateCredits, token management, cookie sync)
+- Created Zustand chat store (conversations, messages, streaming state)
+- Created useSocket hook (Socket.io client with JWT auth, reconnection, streaming events)
+- Created NextAuth v5 route handler with Google + Credentials(OTP) providers
+- Created auth middleware to protect /dashboard routes (redirects to /login)
+- Created SessionProvider and useAuth hook (syncs NextAuth session with Zustand store)
+- Updated root layout with SessionProvider + Navbar + Footer
+- Rewrote Login page with real Phone OTP flow (send → verify → JWT) + Google OAuth + dev fallback
+- Rewrote Dashboard layout with real auth state (user name, credit balance, logout)
+- Updated Navbar with auth-aware UI (user menu when logged in, credit badge, sign out)
+- Rewrote Dashboard page with real API calls (stats, recent documents)
+- Rewrote Chat page with Socket.io integration, conversation sidebar, AI streaming, REST fallback, dev fallback
+- Rewrote Documents page with real API calls (list, download, delete)
+- Rewrote Generate Document page with real API calls (credit deduction, generation trigger, AI enhancement toggle)
+- Rewrote Lawyers page with real API calls + fallback data
+- Rewrote Consultations page with real API calls (list, status badges, join meeting link)
+- Rewrote Credits page with real Razorpay order creation + credit purchase flow
+- Rewrote Settings page with real profile update + account deletion
+- Created database seed script (admin user, demo user, 6 document templates, 2 lawyer profiles, 4 resource articles)
+- Created Document Generation Processor (Handlebars template → Puppeteer PDF → MinIO upload, with credit refund on failure)
+- Updated NestJS DocumentsModule to include DocumentProcessor
+- All TypeScript compilation errors fixed
+- Next.js build passes (all 33 routes)
+- NestJS build passes (0 errors)
+
+Stage Summary:
+- Complete auth flow: NextAuth v5 + Google OAuth + Phone OTP + JWT cookies + middleware protection
+- All 7 dashboard pages wired to real API with graceful fallbacks
+- Socket.io real-time chat with AI streaming
+- Credit purchase flow with Razorpay order creation
+- Database seed script ready
+- Document generation pipeline with Puppeteer PDF rendering
+- Both Next.js and NestJS compile with zero errors

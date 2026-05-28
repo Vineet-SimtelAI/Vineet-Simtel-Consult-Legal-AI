@@ -10,14 +10,15 @@ exports.DocumentsModule = void 0;
 const common_1 = require("@nestjs/common");
 const documents_controller_1 = require("./documents.controller");
 const documents_service_1 = require("./documents.service");
+const document_processor_1 = require("./processors/document.processor");
 let DocumentsModule = class DocumentsModule {
 };
 exports.DocumentsModule = DocumentsModule;
 exports.DocumentsModule = DocumentsModule = __decorate([
     (0, common_1.Module)({
         controllers: [documents_controller_1.DocumentsController],
-        providers: [documents_service_1.DocumentsService],
-        exports: [documents_service_1.DocumentsService],
+        providers: [documents_service_1.DocumentsService, document_processor_1.DocumentProcessor],
+        exports: [documents_service_1.DocumentsService, document_processor_1.DocumentProcessor],
     })
 ], DocumentsModule);
 //# sourceMappingURL=documents.module.js.map
