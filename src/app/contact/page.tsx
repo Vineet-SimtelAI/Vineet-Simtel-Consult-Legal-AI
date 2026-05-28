@@ -81,8 +81,8 @@ export default function ContactPage() {
             </motion.div>
 
             {/* Contact Form */}
-            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
-              <form onSubmit={handleSubmit} className="space-y-4 p-6 rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm">
+            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} suppressHydrationWarning>
+              <form onSubmit={handleSubmit} className="space-y-4 p-6 rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm" suppressHydrationWarning>
                 <h3 className="text-lg font-bold mb-2">Send Us a Message</h3>
                 <div className="space-y-2">
                   <Label htmlFor="name">Your Name *</Label>
