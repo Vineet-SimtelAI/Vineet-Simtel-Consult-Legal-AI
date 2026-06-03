@@ -24,7 +24,7 @@ const whyUs = [
   { title: "Security First", items: ["Bank-grade encryption", "Secure document storage", "GDPR compliant", "Regular security audits"] },
   { title: "Speed & Efficiency", items: ["Generate documents in 5-10 minutes", "Instant AI responses", "Quick lawyer matching", "Real-time document preview"] },
   { title: "Affordable Pricing", items: ["Pay per document (₹499)", "No monthly subscriptions", "Prepurchase AI credits", "No hidden fees ever"] },
-  { title: "Quality Assured", items: ["Templates vetted by lawyers", "GPT-4 powered AI", "Regular template updates", "Comprehensive clause library"] },
+  { title: "Quality Assured", items: ["Templates vetted by lawyers", "Advanced AI-powered assistance", "Regular template updates", "Comprehensive clause library"] },
   { title: "User-Centric", items: ["Intuitive interface", "24/7 email support", "Phone support in business hours", "Regular feature updates"] },
   { title: "Built for India", items: ["Compliant with Indian laws", "Templates for Indian jurisdictions", "GST-compliant invoicing", "India-based data centers"] },
 ]

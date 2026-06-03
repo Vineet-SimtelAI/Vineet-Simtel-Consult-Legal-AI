@@ -10,56 +10,48 @@ const categories = [
     icon: FileText,
     title: "Agreements & Contracts",
     items: "NDA, Service Agreement, Vendor Agreement, Consulting Agreement",
-    color: "teal",
   },
   {
     icon: Users,
     title: "Employment Documents",
     items: "Employment Agreement, Independent Contractor Agreement, Non-Compete",
-    color: "amber",
   },
   {
     icon: Shield,
     title: "Policies & Terms",
     items: "Privacy Policy, Terms of Service, Partnership Agreement",
-    color: "teal",
   },
 ]
 
 export function DocumentLibrarySection() {
   return (
-    <section className="py-20 sm:py-28 relative bg-muted/30">
+    <section className="py-20 sm:py-28 bg-ivory-dark">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-center mb-16"
+          className="mb-16"
         >
-          <h2 className="text-3xl sm:text-4xl font-bold mb-4">Legal Document Library</h2>
-          <p className="text-muted-foreground max-w-xl mx-auto">
-            Browse our comprehensive library of legal document templates. Each page provides detailed information, key clauses, and FAQs to help you understand your legal needs.
-          </p>
-          <div className="w-20 h-1 bg-gradient-to-r from-teal to-amber mx-auto rounded-full mt-4" />
+          <p className="text-sm text-ink/40 tracking-wide uppercase mb-4">Document Library</p>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-serif text-ink leading-tight">
+            Every template<br />you need.
+          </h2>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-ink/10">
           {categories.map((cat, i) => (
             <motion.div
               key={cat.title}
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: i * 0.15 }}
+              transition={{ delay: i * 0.1 }}
             >
-              <Link href="/documents" className="block group">
-                <div className="p-6 rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm hover:border-teal/20 hover:bg-card/80 transition-all duration-300 hover:-translate-y-1 text-center">
-                  <div className={`inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-4 ${cat.color === "teal" ? "bg-teal/10" : "bg-amber/10"}`}>
-                    <cat.icon className={`h-7 w-7 ${cat.color === "teal" ? "text-teal" : "text-amber"}`} />
-                  </div>
-                  <h4 className="font-bold mb-2 group-hover:text-teal transition-colors">{cat.title}</h4>
-                  <p className="text-sm text-muted-foreground">{cat.items}</p>
-                </div>
+              <Link href="/documents" className="block group bg-ivory-dark p-8 sm:p-10 text-center hover:bg-ivory transition-colors duration-300">
+                <cat.icon className="h-5 w-5 text-ink/30 mx-auto mb-4" />
+                <h4 className="text-lg font-serif font-medium text-ink mb-2 group-hover:text-ink/70 transition-colors">{cat.title}</h4>
+                <p className="text-sm text-ink/40">{cat.items}</p>
               </Link>
             </motion.div>
           ))}
@@ -69,11 +61,11 @@ export function DocumentLibrarySection() {
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
-          className="text-center mt-10"
+          className="mt-10"
         >
           <Link href="/documents">
-            <Button variant="outline" className="gap-2 border-teal/30 hover:bg-teal/10 hover:text-teal">
-              Browse All Document Templates <ArrowRight className="h-4 w-4" />
+            <Button variant="ghost" className="gap-2 text-ink font-medium hover:bg-ink/[0.04] rounded-none p-0 h-auto">
+              Browse All Templates <ArrowRight className="h-3.5 w-3.5" />
             </Button>
           </Link>
         </motion.div>

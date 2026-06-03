@@ -16,7 +16,7 @@ const faqs = [
   { q: "Can I get a refund if I'm not satisfied?", a: "Document generation fees are non-refundable once a document is generated. However, unused AI chat credits can be refunded within 30 days of purchase. Lawyer consultation refunds follow our cancellation policy." },
   { q: "Is my data secure and confidential?", a: "Yes, absolutely. We use end-to-end encryption, GDPR-compliant practices, and secure document storage. Your data is never shared without your consent." },
   { q: "Do you provide customer support?", a: "We offer 24/7 email support with a response within 24 hours, and phone support Monday-Saturday, 10 AM - 6 PM IST." },
-  { q: "How does the AI legal assistant work?", a: "Our AI assistant is powered by GPT-4 and trained on Indian legal frameworks. You ask questions in plain language, and it provides context-aware legal guidance in seconds. It maintains conversation history for deeper follow-up questions." },
+  { q: "How does the AI legal assistant work?", a: "Our AI assistant is trained on Indian legal frameworks. You ask questions in plain language, and it provides context-aware legal guidance in seconds. It maintains conversation history for deeper follow-up questions." },
   { q: "What if I need help from a real lawyer?", a: "You can browse our Lawyer Marketplace to find verified lawyers by expertise, location, and pricing. Book video, audio, or chat consultations directly through the platform." },
   { q: "Can I use this for business or commercial purposes?", a: "Yes! Our documents are designed for business use and comply with Indian laws. Many businesses use ConsultLegal for their ongoing legal documentation needs." },
 ]

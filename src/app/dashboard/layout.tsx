@@ -42,29 +42,24 @@ export default function DashboardLayout({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [checked, setChecked] = useState(false)
 
-  // Client-side auth check — hydrate from localStorage and ensure cookie exists
   useEffect(() => {
     const store = useAuthStore.getState()
-
     if (store.isAuthenticated && store.token) {
-      // Ensure cookie is set (in case it was lost)
       document.cookie = `cl_token=${store.token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`
       setChecked(true)
     } else if (!store.isAuthenticated) {
-      // Not authenticated, redirect to login
       router.replace("/login?callbackUrl=" + encodeURIComponent(pathname))
     } else {
       setChecked(true)
     }
   }, [pathname, router])
 
-  // Show loading while checking auth
   if (!checked) {
     return (
-      <div className="min-h-screen flex items-center justify-center pt-16">
+      <div className="min-h-screen flex items-center justify-center pt-16 bg-ink">
         <div className="flex flex-col items-center gap-3">
-          <Loader2 className="h-8 w-8 animate-spin text-teal" />
-          <p className="text-sm text-muted-foreground">Loading...</p>
+          <Loader2 className="h-6 w-6 animate-spin text-ivory/30" />
+          <p className="text-sm text-ivory/30">Loading...</p>
         </div>
       </div>
     )
@@ -76,24 +71,24 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen flex pt-16">
+    <div className="min-h-screen flex pt-16 bg-ink">
       {/* Sidebar */}
-      <aside className="hidden md:flex w-64 flex-col border-r border-border bg-card/50">
-        <div className="p-4 border-b border-border">
-          <Link href="/" className="flex items-center gap-2">
-            <Scale className="h-6 w-6 text-teal" />
-            <span className="font-bold text-lg">Consult Legal</span>
+      <aside className="hidden md:flex w-64 flex-col border-r border-white/[0.06] bg-ink">
+        <div className="p-5 border-b border-white/[0.06]">
+          <Link href="/" className="flex items-center gap-2.5">
+            <Scale className="h-5 w-5 text-ivory/60" />
+            <span className="font-medium text-ivory tracking-tight">Consult Legal</span>
           </Link>
         </div>
 
-        <nav className="flex-1 p-4 space-y-1">
+        <nav className="flex-1 p-3 space-y-0.5">
           {sidebarItems.map((item) => (
             <Link key={item.name} href={item.href}>
               <Button
-                variant={pathname === item.href ? "secondary" : "ghost"}
+                variant="ghost"
                 className={cn(
-                  "w-full justify-start gap-3 text-sm",
-                  pathname === item.href && "bg-teal/10 text-teal hover:bg-teal/15"
+                  "w-full justify-start gap-3 text-sm rounded-none text-ivory/40 hover:text-ivory hover:bg-white/[0.04]",
+                  pathname === item.href && "text-ivory bg-white/[0.04]"
                 )}
               >
                 <item.icon className="h-4 w-4" />
@@ -103,15 +98,15 @@ export default function DashboardLayout({
           ))}
         </nav>
 
-        <div className="p-4 border-t border-border">
+        <div className="p-4 border-t border-white/[0.06]">
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-8 h-8 rounded-full bg-teal/20 flex items-center justify-center text-teal text-sm font-bold">
+            <div className="w-7 h-7 rounded-full bg-ivory/10 flex items-center justify-center text-ivory/50 text-xs font-medium">
               {user?.name?.[0]?.toUpperCase() || "U"}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{user?.name || "User"}</p>
-              <p className="text-xs text-muted-foreground flex items-center gap-1">
-                <Zap className="h-3 w-3 text-teal" />
+              <p className="text-sm font-medium text-ivory/70 truncate">{user?.name || "User"}</p>
+              <p className="text-xs text-ivory/30 flex items-center gap-1">
+                <Zap className="h-3 w-3" />
                 {user?.creditBalance ?? 0} credits
               </p>
             </div>
@@ -119,7 +114,7 @@ export default function DashboardLayout({
           <Button
             variant="ghost"
             size="sm"
-            className="w-full justify-start gap-2 text-muted-foreground hover:text-destructive"
+            className="w-full justify-start gap-2 text-ivory/30 hover:text-red-400 hover:bg-white/[0.04] rounded-none"
             onClick={handleLogout}
           >
             <LogOut className="h-4 w-4" /> Sign Out
@@ -128,41 +123,36 @@ export default function DashboardLayout({
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto bg-ink">
         {/* Mobile header */}
-        <div className="md:hidden p-4 border-b border-border flex items-center justify-between">
-          <Button variant="ghost" size="icon" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+        <div className="md:hidden p-4 border-b border-white/[0.06] flex items-center justify-between">
+          <Button variant="ghost" size="icon" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="text-ivory/50 hover:bg-white/[0.04] rounded-none">
             {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
-          <div className="flex items-center gap-2">
-            <Zap className="h-4 w-4 text-teal" />
-            <span className="text-sm font-medium">{user?.creditBalance ?? 0} credits</span>
+          <div className="flex items-center gap-2 text-ivory/40">
+            <Zap className="h-3.5 w-3.5" />
+            <span className="text-sm">{user?.creditBalance ?? 0} credits</span>
           </div>
         </div>
 
         {/* Mobile menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden p-4 border-b border-border space-y-1">
+          <div className="md:hidden p-3 border-b border-white/[0.06] space-y-0.5">
             {sidebarItems.map((item) => (
               <Link key={item.name} href={item.href} onClick={() => setMobileMenuOpen(false)}>
                 <Button
-                  variant={pathname === item.href ? "secondary" : "ghost"}
+                  variant="ghost"
                   size="sm"
                   className={cn(
-                    "w-full justify-start gap-2 text-sm",
-                    pathname === item.href && "bg-teal/10 text-teal"
+                    "w-full justify-start gap-2 text-sm rounded-none text-ivory/40 hover:text-ivory hover:bg-white/[0.04]",
+                    pathname === item.href && "text-ivory bg-white/[0.04]"
                   )}
                 >
                   <item.icon className="h-4 w-4" /> {item.name}
                 </Button>
               </Link>
             ))}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full justify-start gap-2 text-destructive"
-              onClick={handleLogout}
-            >
+            <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-red-400 hover:bg-white/[0.04] rounded-none" onClick={handleLogout}>
               <LogOut className="h-4 w-4" /> Sign Out
             </Button>
           </div>

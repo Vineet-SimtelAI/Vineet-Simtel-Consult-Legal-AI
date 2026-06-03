@@ -21,13 +21,17 @@ export class StorageService implements OnModuleInit {
   }
 
   async onModuleInit() {
-    // Ensure bucket exists
-    const exists = await this.client.bucketExists(this.bucket);
-    if (!exists) {
-      await this.client.makeBucket(this.bucket, 'us-east-1');
-      this.logger.log(`✅ Created MinIO bucket: ${this.bucket}`);
-    } else {
-      this.logger.log(`✅ MinIO bucket exists: ${this.bucket}`);
+    try {
+      // Ensure bucket exists
+      const exists = await this.client.bucketExists(this.bucket);
+      if (!exists) {
+        await this.client.makeBucket(this.bucket, 'us-east-1');
+        this.logger.log(`✅ Created MinIO bucket: ${this.bucket}`);
+      } else {
+        this.logger.log(`✅ MinIO bucket exists: ${this.bucket}`);
+      }
+    } catch (err) {
+      this.logger.warn(`⚠️ MinIO init failed (storage unavailable): ${err.message}`);
     }
   }
 
