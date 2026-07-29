@@ -29,7 +29,7 @@ let LawyersService = LawyersService_1 = class LawyersService {
         if (cached)
             return cached;
         const where = {
-            verified: true,
+            licenseVerified: true,
             isAvailable: true,
             kycStatus: 'verified',
         };

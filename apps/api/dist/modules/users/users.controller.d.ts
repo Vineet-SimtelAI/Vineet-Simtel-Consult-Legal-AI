@@ -8,8 +8,8 @@ export declare class UsersController {
         name: string;
         id: string;
         role: import(".prisma/client").$Enums.UserRole;
-        phone: string | null;
         email: string | null;
+        phone: string | null;
         avatarUrl: string | null;
         creditBalance: number;
         company: string | null;

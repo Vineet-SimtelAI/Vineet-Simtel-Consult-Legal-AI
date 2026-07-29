@@ -24,7 +24,7 @@ export class LawyersService {
     if (cached) return cached;
 
     const where: any = {
-      verified: true,
+      licenseVerified: true,
       isAvailable: true,
       kycStatus: 'verified',
     };

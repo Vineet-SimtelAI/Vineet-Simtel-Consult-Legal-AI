@@ -11,13 +11,18 @@ const common_1 = require("@nestjs/common");
 const rxjs_1 = require("rxjs");
 let TransformInterceptor = class TransformInterceptor {
     intercept(context, next) {
-        return next.handle().pipe((0, rxjs_1.map)((data) => ({
-            success: true,
-            data,
-            meta: {
-                timestamp: new Date().toISOString(),
-            },
-        })));
+        return next.handle().pipe((0, rxjs_1.map)((data) => {
+            if (data instanceof common_1.StreamableFile) {
+                return data;
+            }
+            return {
+                success: true,
+                data,
+                meta: {
+                    timestamp: new Date().toISOString(),
+                },
+            };
+        }));
     }
 };
 exports.TransformInterceptor = TransformInterceptor;

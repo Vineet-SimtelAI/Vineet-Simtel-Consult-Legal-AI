@@ -20,6 +20,10 @@ declare const _default: (() => {
     aiApiKey: string | undefined;
     aiModel: string;
     aiBaseUrl: string | undefined;
+    geminiApiKey: string | undefined;
+    geminiModel: string;
+    groqApiKey: string | undefined;
+    groqModel: string;
     port: number;
     nodeEnv: string;
 }) & import("@nestjs/config").ConfigFactoryKeyHost<{
@@ -44,6 +48,10 @@ declare const _default: (() => {
     aiApiKey: string | undefined;
     aiModel: string;
     aiBaseUrl: string | undefined;
+    geminiApiKey: string | undefined;
+    geminiModel: string;
+    groqApiKey: string | undefined;
+    groqModel: string;
     port: number;
     nodeEnv: string;
 }>;

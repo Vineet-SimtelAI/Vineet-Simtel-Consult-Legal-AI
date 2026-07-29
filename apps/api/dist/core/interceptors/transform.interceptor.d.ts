@@ -8,6 +8,6 @@ export interface ApiResponse<T> {
         [key: string]: any;
     };
 }
-export declare class TransformInterceptor<T> implements NestInterceptor<T, ApiResponse<T>> {
-    intercept(context: ExecutionContext, next: CallHandler): Observable<ApiResponse<T>>;
+export declare class TransformInterceptor<T> implements NestInterceptor<T, any> {
+    intercept(context: ExecutionContext, next: CallHandler): Observable<any>;
 }

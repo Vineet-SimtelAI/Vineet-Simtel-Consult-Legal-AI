@@ -39,8 +39,8 @@ export declare class AdminController {
             id: string;
             createdAt: Date;
             role: import(".prisma/client").$Enums.UserRole;
-            phone: string | null;
             email: string | null;
+            phone: string | null;
             creditBalance: number;
             lastLoginAt: Date | null;
             _count: {
@@ -65,8 +65,8 @@ export declare class AdminController {
     listPendingLawyers(): Promise<({
         user: {
             name: string;
-            phone: string | null;
             email: string | null;
+            phone: string | null;
             avatarUrl: string | null;
         };
     } & {

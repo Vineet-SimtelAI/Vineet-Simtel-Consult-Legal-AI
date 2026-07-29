@@ -162,6 +162,11 @@ let DocumentsService = DocumentsService_1 = class DocumentsService {
         if (!objectKey) {
             throw new common_1.BadRequestException(`${format.toUpperCase()} format not available`);
         }
+        if (objectKey.startsWith('local:')) {
+            const baseUrl = process.env.API_URL || 'http://localhost:4000';
+            const fileUrl = `${baseUrl}/api/v1/documents/${documentId}/file?format=${format}`;
+            return { url: fileUrl, format, expiresAt: new Date(Date.now() + 3600000).toISOString() };
+        }
         const presignedUrl = await this.storageService.getPresignedUrl(objectKey, 3600);
         return { url: presignedUrl, format, expiresAt: new Date(Date.now() + 3600000).toISOString() };
     }

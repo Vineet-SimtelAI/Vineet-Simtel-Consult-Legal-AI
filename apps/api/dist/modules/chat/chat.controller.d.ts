@@ -1,5 +1,12 @@
 import { ChatService } from './chat.service';
 import { CreateConversationDto } from './dto/chat.dto';
+declare class ChatMessageDto {
+    role: string;
+    content: string;
+}
+declare class AskDto {
+    messages: ChatMessageDto[];
+}
 export declare class ChatController {
     private chatService;
     constructor(chatService: ChatService);
@@ -41,4 +48,14 @@ export declare class ChatController {
             __v: number;
         };
     }>;
+    ask(dto: AskDto): Promise<{
+        content: string;
+        model: string;
+        tokensUsed: number;
+        legalReferences: {
+            act: string;
+            section: string;
+        }[] | undefined;
+    }>;
 }
+export {};

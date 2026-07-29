@@ -11,7 +11,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     private authService: AuthService,
   ) {
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        ExtractJwt.fromAuthHeaderAsBearerToken(),
+        (req) => {
+          return req?.query?.token as string || null;
+        },
+      ]),
       ignoreExpiration: false,
       secretOrKey: configService.get<string>('app.jwtSecret') || 'consultlegal-jwt-secret-2024',
     });

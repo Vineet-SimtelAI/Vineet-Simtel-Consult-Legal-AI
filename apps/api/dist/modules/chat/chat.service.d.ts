@@ -66,4 +66,16 @@ export declare class ChatService {
             __v: number;
         };
     }>;
+    directAsk(messages: Array<{
+        role: string;
+        content: string;
+    }>): Promise<{
+        content: string;
+        model: string;
+        tokensUsed: number;
+        legalReferences: {
+            act: string;
+            section: string;
+        }[] | undefined;
+    }>;
 }

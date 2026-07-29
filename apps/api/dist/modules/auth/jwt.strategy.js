@@ -18,7 +18,12 @@ const auth_service_1 = require("./auth.service");
 let JwtStrategy = class JwtStrategy extends (0, passport_1.PassportStrategy)(passport_jwt_1.Strategy) {
     constructor(configService, authService) {
         super({
-            jwtFromRequest: passport_jwt_1.ExtractJwt.fromAuthHeaderAsBearerToken(),
+            jwtFromRequest: passport_jwt_1.ExtractJwt.fromExtractors([
+                passport_jwt_1.ExtractJwt.fromAuthHeaderAsBearerToken(),
+                (req) => {
+                    return req?.query?.token || null;
+                },
+            ]),
             ignoreExpiration: false,
             secretOrKey: configService.get('app.jwtSecret') || 'consultlegal-jwt-secret-2024',
         });

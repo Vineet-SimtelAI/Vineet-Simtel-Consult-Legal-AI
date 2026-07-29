@@ -36,6 +36,14 @@ export default registerAs('app', () => ({
   aiModel: process.env.AI_MODEL || 'gpt-4',
   aiBaseUrl: process.env.AI_BASE_URL,
 
+  // Gemini
+  geminiApiKey: process.env.GEMINI_API_KEY,
+  geminiModel: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
+
+  // Groq
+  groqApiKey: process.env.GROQ_API_KEY,
+  groqModel: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
+
   // App
   port: parseInt(process.env.PORT || '4000', 10),
   nodeEnv: process.env.NODE_ENV || 'development',

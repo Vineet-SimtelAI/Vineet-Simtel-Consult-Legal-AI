@@ -57,17 +57,17 @@ export declare class AuthService {
         createdAt: Date;
         updatedAt: Date;
         role: import(".prisma/client").$Enums.UserRole;
-        phone: string | null;
+        deletedAt: Date | null;
         email: string | null;
+        phone: string | null;
+        googleId: string | null;
         avatarUrl: string | null;
         emailVerified: boolean;
         phoneVerified: boolean;
-        googleId: string | null;
         creditBalance: number;
         company: string | null;
         designation: string | null;
         lastLoginAt: Date | null;
-        deletedAt: Date | null;
     } | null>;
     refreshToken(userId: string): Promise<{
         accessToken: string;

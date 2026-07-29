@@ -3,6 +3,22 @@ import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { ChatService } from './chat.service';
 import { CreateConversationDto } from './dto/chat.dto';
+import { IsArray, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
+
+class ChatMessageDto {
+  @IsString()
+  role: string;
+
+  @IsString()
+  content: string;
+}
+
+class AskDto {
+  @IsArray()
+  @Type(() => ChatMessageDto)
+  messages: ChatMessageDto[];
+}
 
 @ApiTags('AI Chat')
 @ApiBearerAuth()
@@ -42,5 +58,11 @@ export class ChatController {
   @ApiOperation({ summary: 'Archive a conversation' })
   async archiveConversation(@Request() req: any, @Param('id') id: string) {
     return this.chatService.archiveConversation(req.user.id, id);
+  }
+
+  @Post('ask')
+  @ApiOperation({ summary: 'Ask Gemini AI directly (no conversation stored)' })
+  async ask(@Body() dto: AskDto) {
+    return this.chatService.directAsk(dto.messages);
   }
 }

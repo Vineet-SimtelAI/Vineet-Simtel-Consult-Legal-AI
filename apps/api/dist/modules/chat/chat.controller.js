@@ -19,6 +19,25 @@ const passport_1 = require("@nestjs/passport");
 const swagger_1 = require("@nestjs/swagger");
 const chat_service_1 = require("./chat.service");
 const chat_dto_1 = require("./dto/chat.dto");
+const class_validator_1 = require("class-validator");
+const class_transformer_1 = require("class-transformer");
+class ChatMessageDto {
+}
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], ChatMessageDto.prototype, "role", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], ChatMessageDto.prototype, "content", void 0);
+class AskDto {
+}
+__decorate([
+    (0, class_validator_1.IsArray)(),
+    (0, class_transformer_1.Type)(() => ChatMessageDto),
+    __metadata("design:type", Array)
+], AskDto.prototype, "messages", void 0);
 let ChatController = class ChatController {
     constructor(chatService) {
         this.chatService = chatService;
@@ -34,6 +53,9 @@ let ChatController = class ChatController {
     }
     async archiveConversation(req, id) {
         return this.chatService.archiveConversation(req.user.id, id);
+    }
+    async ask(dto) {
+        return this.chatService.directAsk(dto.messages);
     }
 };
 exports.ChatController = ChatController;
@@ -84,6 +106,15 @@ __decorate([
     __metadata("design:paramtypes", [Object, String]),
     __metadata("design:returntype", Promise)
 ], ChatController.prototype, "archiveConversation", null);
+__decorate([
+    (0, common_1.Post)('ask'),
+    (0, swagger_1.ApiOperation)({ summary: 'Ask Gemini AI directly (no conversation stored)' }),
+    openapi.ApiResponse({ status: 201 }),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [AskDto]),
+    __metadata("design:returntype", Promise)
+], ChatController.prototype, "ask", null);
 exports.ChatController = ChatController = __decorate([
     (0, swagger_1.ApiTags)('AI Chat'),
     (0, swagger_1.ApiBearerAuth)(),

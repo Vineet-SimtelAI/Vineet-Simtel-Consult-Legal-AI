@@ -1,138 +1,337 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// ConsultLegal - PostgreSQL Schema
+// Shared between Next.js frontend and NestJS API
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  image     String?
-  credits   Int      @default(25)
-  role      String   @default("user") // user, lawyer, admin
-  googleId  String?  @unique
-  phone     String?
-  company   String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+// ─── ENUMS ───
 
-  documents     Document[]
-  consultations Consultation[]
-  creditTxns    CreditTransaction[]
-  chatSessions  ChatSession[]
+enum UserRole {
+  USER
+  LAWYER
+  ADMIN
 }
 
-model Document {
-  id         String   @id @default(cuid())
-  userId     String
-  type       String   // NDA, employment, service, etc.
-  title      String
-  formData   String   // JSON string of form inputs
-  clauses    String   // JSON array of selected clauses
-  pdfUrl     String?
-  docxUrl    String?
-  status     String   @default("draft") // draft, generated, reviewed
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+enum ConsultationStatus {
+  REQUESTED
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
 
-  user User @relation(fields: [userId], references: [id])
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum DocumentStatus {
+  DRAFT
+  GENERATING
+  COMPLETED
+  FAILED
+}
+
+enum CreditTransactionType {
+  PURCHASE
+  DOCUMENT_GENERATION
+  AI_CHAT
+  CONSULTATION
+  REFUND
+  EXPIRY
+  BONUS
+}
+
+// ─── MODELS ───
+
+model User {
+  id            String    @id @default(cuid())
+  email         String?   @unique
+  phone         String?   @unique
+  name          String
+  avatarUrl     String?
+  role          UserRole  @default(USER)
+  emailVerified Boolean   @default(false)
+  phoneVerified Boolean   @default(false)
+
+  // OAuth
+  googleId      String?   @unique
+
+  // Credits
+  creditBalance Int       @default(25)
+
+  // Profile
+  company       String?
+  designation   String?
+
+  // Timestamps
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  lastLoginAt   DateTime?
+  deletedAt     DateTime? // soft delete
+
+  // Relations
+  documents         Document[]
+  consultations     Consultation[]
+  creditTransactions CreditTransaction[]
+  chatSessions      ChatSession[]
+  lawyerProfile     LawyerProfile?
+  payments          Payment[]
+
+  @@index([email])
+  @@index([phone])
+  @@index([googleId])
+  @@index([role])
 }
 
 model LawyerProfile {
-  id             String   @id @default(cuid())
-  userId         String   @unique
-  specializations String  // JSON array
-  experience     Int      // years
-  hourlyRate     Int
-  location       String
-  languages      String   // JSON array
-  rating         Float    @default(0)
-  reviewCount    Int      @default(0)
-  verified       Boolean  @default(false)
-  availability   String   // JSON object
-  bio            String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  specializations  String[]  // ["Corporate", "Criminal", "Family", "IP", ...]
+  experience       Int       // years
+  barCouncilNo     String?
+  licenseVerified  Boolean   @default(false)
+  bio              String?
+  hourlyRate       Int?      // in INR (paisa, so ₹500/hr = 50000)
+  rating           Float     @default(0)
+  totalReviews     Int       @default(0)
+  isAvailable      Boolean   @default(true)
+  city             String?
+  state            String?
+  languages        String[]  // ["English", "Hindi", "Kannada", ...]
+
+  // KYC
+  kycStatus        String    @default("pending") // pending, submitted, verified, rejected
+  kycDocuments     Json?
+
+  // Availability Schedule (JSON)
+  availability     Json?     // { "monday": ["09:00-12:00", "14:00-18:00"], ... }
+
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  consultations    Consultation[]
+
+  @@index([specializations])
+  @@index([city])
+  @@index([isAvailable])
+  @@index([kycStatus])
+}
+
+model Document {
+  id          String         @id @default(cuid())
+  userId      String
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type        String         // nda, employment-agreement, service-agreement, etc.
+  title       String
+  status      DocumentStatus @default(DRAFT)
+
+  // Template data filled by user
+  formData    Json           // { partyA, partyB, jurisdiction, ... }
+
+  // Clauses
+  clauses     Json?          // [{ name, text, selected }]
+
+  // Generated files
+  pdfUrl      String?        // MinIO path
+  docxUrl     String?        // MinIO path
+  pdfKey      String?        // MinIO object key
+  docxKey     String?        // MinIO object key
+  fileSize    Int?           // bytes
+
+  // Credits
+  creditsUsed Int            @default(0)
+
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  deletedAt   DateTime?      // soft delete
+
+  @@index([userId])
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model Consultation {
-  id           String   @id @default(cuid())
-  userId       String
-  lawyerId     String
-  type         String   // video, audio, chat
-  status       String   @default("booked") // booked, completed, cancelled
-  scheduledAt  DateTime
-  duration     Int?     // minutes
-  price        Int
-  notes        String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id              String              @id @default(cuid())
+  userId          String
+  user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lawyerId        String
+  lawyer          LawyerProfile       @relation(fields: [lawyerId], references: [id])
 
-  user User @relation(fields: [userId], references: [id])
+  status          ConsultationStatus  @default(REQUESTED)
+  type            String              @default("video") // video, audio, chat
+  scheduledAt     DateTime?
+  duration        Int?                // minutes
+  meetingLink     String?             // Google Meet / Zoom link
+
+  topic           String
+  description     String?
+
+  creditsCharged  Int?
+  paymentId       String?
+
+  notes           String?             // Lawyer notes after consultation
+  userRating      Int?                // 1-5 stars
+  userReview      String?
+
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@index([userId])
+  @@index([lawyerId])
+  @@index([status])
+  @@index([scheduledAt])
+}
+
+model Payment {
+  id                String        @id @default(cuid())
+  userId            String
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  razorpayOrderId     String     @unique
+  razorpayPaymentId   String?
+  razorpaySignature   String?
+
+  amount            Int             // in paisa (₹499 = 49900)
+  currency          String          @default("INR")
+  status            PaymentStatus   @default(PENDING)
+
+  // What was purchased
+  purpose           String          // credits, document, consultation
+  purposeId         String?         // related entity ID
+  creditsAdded      Int?            // if purpose = credits
+
+  receipt           String?         // Razorpay receipt number
+
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([razorpayOrderId])
+  @@index([createdAt])
 }
 
 model CreditTransaction {
-  id         String   @id @default(cuid())
-  userId     String
-  amount     Int      // positive = purchase, negative = usage
-  tokens     Int?     // token count for AI chat
-  type       String   // purchase, document_generation, ai_chat, consultation
-  package    String?  // starter, basic, standard, professional, enterprise
-  razorpayId String?
-  createdAt  DateTime @default(now())
+  id          String                  @id @default(cuid())
+  userId      String
+  user        User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  user User @relation(fields: [userId], references: [id])
+  amount      Int                     // positive = credit, negative = debit
+  balance     Int                     // balance after this transaction
+  type        CreditTransactionType
+  referenceId String?                 // related entity ID (documentId, consultationId, etc.)
+  package     String?                 // starter, standard, professional, enterprise
+  description String
+
+  createdAt   DateTime                @default(now())
+
+  @@index([userId])
+  @@index([type])
+  @@index([createdAt])
 }
 
 model ChatSession {
-  id        String   @id @default(cuid())
-  userId    String
-  title     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  user     User          @relation(fields: [userId], references: [id])
-  messages ChatMessage[]
+  title       String?
+  status      String    @default("active") // active, archived
+
+  creditsUsed Int       @default(0)
+  tags        String[]
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  messages    ChatMessage[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model ChatMessage {
-  id        String   @id @default(cuid())
-  sessionId String
-  role      String   // user, assistant
-  content   String
-  tokens    Int?
-  createdAt DateTime @default(now())
+  id          String    @id @default(cuid())
+  sessionId   String
+  session     ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
-  session ChatSession @relation(fields: [sessionId], references: [id])
+  role        String    // user, assistant, system
+  content     String
+
+  // AI metadata
+  tokens      Int?
+  model       String?
+  latencyMs   Int?
+
+  createdAt   DateTime  @default(now())
+
+  @@index([sessionId])
+  @@index([createdAt])
 }
 
 model DocumentTemplate {
-  id          String   @id @default(cuid())
-  type        String   @unique
+  id          String    @id @default(cuid())
+  type        String    @unique  // nda, employment-agreement, etc.
   name        String
   description String
-  clauses     String   // JSON array of available clauses
-  formSchema  String   // JSON schema for the form
-  price       Int      @default(499)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  category    String    // corporate, employment, ip, etc.
+  clauses     Json      // available clauses for this template
+  formSchema  Json      // JSON schema for the dynamic form
+  price       Int       @default(499)  // in INR (paisa)
+  creditsCost Int       @default(10)
+  isActive    Boolean   @default(true)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([category])
+  @@index([isActive])
 }
 
 model ResourceArticle {
-  id          String   @id @default(cuid())
-  slug        String   @unique
+  id          String    @id @default(cuid())
+  slug        String    @unique
   title       String
   category    String
   content     String
-  readTime    Int      // minutes
+  excerpt     String?
+  readTime    Int       // minutes
+  isPublished Boolean   @default(false)
   publishedAt DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([category])
+  @@index([isPublished])
+  @@index([publishedAt])
+}
+
+model OtpAttempt {
+  id          String    @id @default(cuid())
+  phone       String
+  otp         String    // hashed
+  purpose     String    // login, verify
+  attempts    Int       @default(0)
+  verified    Boolean   @default(false)
+  expiresAt   DateTime
+
+  createdAt   DateTime  @default(now())
+
+  @@index([phone])
+  @@index([expiresAt])
 }

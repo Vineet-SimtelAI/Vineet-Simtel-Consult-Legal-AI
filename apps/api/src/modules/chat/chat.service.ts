@@ -6,6 +6,8 @@ import { QueueService } from '../../core/queue/queue.service';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { ChatConversation, ChatMessage } from '../../core/database/mongoose/schemas/all-schemas';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import Groq from 'groq-sdk';
 
 @Injectable()
 export class ChatService {
@@ -186,7 +188,7 @@ export class ChatService {
     };
   }
 
-  // ─── Generate AI Response ───
+  // ─── Generate AI Response (Groq primary, Gemini fallback) ───
   private async generateAIResponse(messages: Array<{ role: string; content: string }>): Promise<{
     content: string;
     model: string;
@@ -194,14 +196,12 @@ export class ChatService {
     legalReferences?: Array<{ act: string; section: string }>;
     confidence?: number;
   }> {
-    const model = this.configService.get<string>('app.aiModel') || 'gpt-4';
-    const apiKey = this.configService.get<string>('app.aiApiKey');
-    const baseUrl = this.configService.get<string>('app.aiBaseUrl') || 'https://api.openai.com/v1';
+    const groqApiKey = this.configService.get<string>('app.groqApiKey');
+    const groqModel = this.configService.get<string>('app.groqModel') || 'llama-3.3-70b-versatile';
+    const geminiApiKey = this.configService.get<string>('app.geminiApiKey');
+    const geminiModel = this.configService.get<string>('app.geminiModel') || 'gemini-2.5-flash';
 
-    // System prompt for Indian legal context
-    const systemPrompt = {
-      role: 'system' as const,
-      content: `You are ConsultLegal AI, an expert legal assistant specializing in Indian law. You provide accurate, helpful legal information based on Indian legal frameworks including:
+    const systemPrompt = `You are ConsultLegal AI, an expert legal assistant specializing in Indian law. You provide accurate, helpful legal information based on Indian legal frameworks including:
 
 - Indian Contract Act, 1872
 - Companies Act, 2013
@@ -222,52 +222,88 @@ Important guidelines:
 3. Recommend consulting a qualified lawyer for specific situations
 4. Be precise about jurisdiction (primarily Indian law)
 5. If unsure, say so rather than providing incorrect information
-6. Use clear, accessible language while maintaining legal accuracy`,
-    };
+6. Use clear, accessible language while maintaining legal accuracy`;
 
-    try {
-      const response = await fetch(`${baseUrl}/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model,
-          messages: [systemPrompt, ...messages],
+    // ── Primary: Groq ──
+    if (groqApiKey) {
+      try {
+        const groq = new Groq({ apiKey: groqApiKey });
+
+        const groqMessages: Groq.Chat.ChatCompletionMessageParam[] = [
+          { role: 'system', content: systemPrompt },
+          ...messages.map((m) => ({
+            role: m.role as 'user' | 'assistant',
+            content: m.content,
+          })),
+        ];
+
+        const completion = await groq.chat.completions.create({
+          model: groqModel,
+          messages: groqMessages,
           temperature: 0.7,
-          max_tokens: 2000,
-        }),
-      });
+          max_tokens: 2048,
+        });
 
-      if (!response.ok) {
-        throw new Error(`AI API error: ${response.status}`);
+        const content = completion.choices[0]?.message?.content || '';
+        const tokensUsed = completion.usage?.total_tokens || 0;
+        const legalReferences = this.extractLegalReferences(content);
+
+        return {
+          content,
+          model: groqModel,
+          tokensUsed,
+          legalReferences: legalReferences.length > 0 ? legalReferences : undefined,
+          confidence: 0.9,
+        };
+      } catch (error) {
+        this.logger.warn(`Groq AI failed, falling back to Gemini: ${error.message}`);
       }
-
-      const data = await response.json();
-      const content = data.choices[0]?.message?.content || 'I apologize, but I was unable to generate a response. Please try again.';
-
-      // Extract legal references from the response
-      const legalReferences = this.extractLegalReferences(content);
-
-      return {
-        content,
-        model,
-        tokensUsed: data.usage?.total_tokens || 0,
-        legalReferences: legalReferences.length > 0 ? legalReferences : undefined,
-        confidence: 0.85,
-      };
-    } catch (error) {
-      this.logger.error(`AI generation failed: ${error.message}`);
-
-      // Fallback response
-      return {
-        content: 'I apologize, but I am currently unable to process your request. This may be due to a temporary service issue. Please try again in a few moments. If the problem persists, please contact our support team.',
-        model: 'fallback',
-        tokensUsed: 0,
-        confidence: 0,
-      };
     }
+
+    // ── Fallback: Gemini ──
+    if (geminiApiKey) {
+      try {
+        const genAI = new GoogleGenerativeAI(geminiApiKey);
+        const model = genAI.getGenerativeModel({
+          model: geminiModel,
+          systemInstruction: systemPrompt,
+        });
+
+        const historyMessages = messages.slice(0, -1);
+        const lastMessage = messages[messages.length - 1];
+
+        const geminiHistory = historyMessages.map((msg) => ({
+          role: msg.role === 'assistant' ? 'model' : 'user',
+          parts: [{ text: msg.content }],
+        }));
+
+        const chat = model.startChat({ history: geminiHistory });
+        const result = await chat.sendMessage(lastMessage?.content || '');
+        const response = result.response;
+        const content = response.text();
+        const tokensUsed = response.usageMetadata?.totalTokenCount || 0;
+        const legalReferences = this.extractLegalReferences(content);
+
+        return {
+          content,
+          model: geminiModel,
+          tokensUsed,
+          legalReferences: legalReferences.length > 0 ? legalReferences : undefined,
+          confidence: 0.85,
+        };
+      } catch (error) {
+        this.logger.error(`Gemini AI fallback also failed: ${error.message}`);
+      }
+    }
+
+    // ── Final fallback ──
+    this.logger.error('All AI providers failed or no API keys configured');
+    return {
+      content: 'I apologize, but I am currently unable to process your request. This may be due to a temporary service issue. Please try again in a few moments. If the problem persists, please contact our support team.',
+      model: 'fallback',
+      tokensUsed: 0,
+      confidence: 0,
+    };
   }
 
   // ─── Extract Legal References from AI response text ───
@@ -299,5 +335,11 @@ Important guidelines:
     }
 
     return { message: 'Conversation archived', conversation };
+  }
+
+  // ─── Direct Ask (no MongoDB, no credits) ───
+  async directAsk(messages: Array<{ role: string; content: string }>) {
+    const result = await this.generateAIResponse(messages);
+    return { content: result.content, model: result.model, tokensUsed: result.tokensUsed, legalReferences: result.legalReferences };
   }
 }

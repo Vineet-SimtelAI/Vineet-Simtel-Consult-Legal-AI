@@ -58,13 +58,13 @@ export declare class DocumentsService {
         createdAt: Date;
         updatedAt: Date;
         formData: import("@prisma/client/runtime/library").JsonValue;
-        deletedAt: Date | null;
         clauses: import("@prisma/client/runtime/library").JsonValue | null;
         pdfUrl: string | null;
         docxUrl: string | null;
         pdfKey: string | null;
         docxKey: string | null;
         fileSize: number | null;
+        deletedAt: Date | null;
     }>;
     generateDocument(userId: string, dto: GenerateDocumentDto): Promise<{
         documentId: string;

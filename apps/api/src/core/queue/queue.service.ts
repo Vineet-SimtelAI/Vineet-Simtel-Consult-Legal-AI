@@ -2,7 +2,11 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import { PrismaService } from '../database/prisma/prisma.service';
+import { StorageService } from '../storage/storage.service';
+import { RedisService } from '../redis/redis.service';
 import { AnalyticsEvent } from '../database/mongoose/schemas/all-schemas';
+import { DocumentProcessor, GenerateJobData } from '../../modules/documents/processors/document.processor';
 
 export interface QueueJob {
   id: string;
@@ -21,20 +25,38 @@ export class QueueService {
   constructor(
     private configService: ConfigService,
     @InjectModel(AnalyticsEvent.name) private analyticsModel: Model<AnalyticsEvent>,
+    private prisma: PrismaService,
+    private storageService: StorageService,
+    private redisService: RedisService,
   ) {}
 
   /**
    * Enqueue a job for processing.
-   * In production, this uses Bull (Redis-backed).
-   * For now, this is a simplified in-memory implementation
-   * that will be replaced with Bull when Redis is available.
+   * Runs the DocumentProcessor in the background with all required dependencies injected.
    */
   async enqueue(queueName: string, data: any, options?: { delay?: number; attempts?: number }): Promise<string> {
     const jobId = `job_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     this.logger.log(`Enqueued job [${jobId}] to queue [${queueName}]`);
 
-    // In production: return bullQueue.add(data, options);
-    // For now, log and return
+    if (queueName === 'document:generate') {
+      const processor = new DocumentProcessor(
+        this.prisma,
+        this.storageService,
+        this.configService,
+        this.redisService,
+      );
+
+      setTimeout(() => {
+        processor.process(data as GenerateJobData)
+          .then(() => {
+            this.logger.log(`✅ Document job [${jobId}] completed`);
+          })
+          .catch((err: any) => {
+            this.logger.error(`❌ Document job [${jobId}] failed: ${err.message}`);
+          });
+      }, options?.delay || 500);
+    }
+
     return jobId;
   }
 
